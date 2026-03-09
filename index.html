@@ -119,6 +119,7 @@
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"
 import{getAuth,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
 import{getFirestore,doc,getDoc,setDoc,updateDoc,collection,addDoc,onSnapshot,arrayUnion,serverTimestamp,query,orderBy,deleteDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js"
 
 const firebaseConfig={
 apiKey:"AIzaSyAgLH8g-20u6zDAP2eQ0oU94DYpx5RjabI",
@@ -132,6 +133,7 @@ appId:"1:524822883656:web:b03fc3d96e6925a3da977d"
 const app=initializeApp(firebaseConfig)
 const auth=getAuth(app)
 const db=getFirestore(app)
+const messaging=getMessaging(app)
 
 let user
 let username
@@ -182,8 +184,46 @@ document.getElementById("usernameModal").style.display="flex"
 
 }
 
+setupNotifications()
 loadFriends()
 loadGroups()
+
+})
+
+async function setupNotifications(){
+
+const permission=await Notification.requestPermission()
+
+if(permission!=="granted")return
+
+try{
+
+const token=await getToken(messaging,{
+vapidKey:"BElExampleReplaceWithYourVapidKey123456789"
+})
+
+if(token){
+
+await updateDoc(doc(db,"accounts",user.uid),{
+deviceToken:token
+})
+
+}
+
+}catch(e){}
+
+}
+
+onMessage(messaging,payload=>{
+
+if(payload.notification){
+
+new Notification(payload.notification.title,{
+body:payload.notification.body,
+icon:"/assets/logo.png"
+})
+
+}
 
 })
 
@@ -314,7 +354,6 @@ chatMessages.scrollTop=chatMessages.scrollHeight
 function renderMessage(d){
 
 let m=d.data()
-let id=d.id
 
 let div=document.createElement("div")
 div.className="message-bubble "+(m.user===user.uid?"self":"friend")
@@ -382,8 +421,6 @@ await addDoc(collection(db,"groups",chatId,"messages"),msg)
 
 }
 
-/* ---------------- ADD FRIEND ---------------- */
-
 document.getElementById("addFriendBtn").onclick=async()=>{
 
 let friendUID=document.getElementById("friendCode").value.trim()
@@ -409,8 +446,6 @@ document.getElementById("friendCode").value=""
 loadFriends()
 
 }
-
-/* ---------------- CREATE GROUP ---------------- */
 
 document.getElementById("createGroupBtn").onclick=async()=>{
 
@@ -440,8 +475,6 @@ loadGroups()
 alert("Group code: "+code)
 
 }
-
-/* ---------------- JOIN GROUP ---------------- */
 
 document.getElementById("joinGroupBtn").onclick=async()=>{
 
@@ -486,4 +519,5 @@ if(unsub)unsub()
 </body>
 
 </html>
+
 
