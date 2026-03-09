@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feed - Mittens</title>
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+<main>
+<header>
+<img src="/assets/logo.png" class="logo" alt="Mittens Logo">
+<button id="logout">Log Out</button>
+</header>
+<div class="post-box">
+<textarea id="postText" placeholder="What's on your mind?"></textarea>
+<button id="postBtn">Post</button>
+</div>
+<div id="posts"></div>
+</main>
+<script type="module">
+import { renderFeed, postMessage, logout } from '../assets/script.js';
+document.getElementById('postBtn').addEventListener('click',()=>{postMessage(document.getElementById('postText').value)});
+document.getElementById('logout').addEventListener('click',logout);
+renderFeed(document.getElementById('posts'));
+</script>
+</body>
+</html>

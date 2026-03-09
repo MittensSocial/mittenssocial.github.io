@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mittens</title>
+<link rel="stylesheet" href="/assets/styles.css">
+
+<script type="module">
+
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"
+import{getAuth,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
+import{getFirestore,doc,getDoc,setDoc,updateDoc,collection,addDoc,onSnapshot,arrayUnion,serverTimestamp,query,orderBy,deleteDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+
+const firebaseConfig={
+apiKey:"AIzaSyAgLH8g-20u6zDAP2eQ0oU94DYpx5RjabI",
+authDomain:"mittens-ac688.firebaseapp.com",
+projectId:"mittens-ac688",
+storageBucket:"mittens-ac688.firebasestorage.app",
+messagingSenderId:"524822883656",
+appId:"1:524822883656:web:b03fc3d96e6925a3da977d"
+}
+
+const app=initializeApp(firebaseConfig)
+const auth=getAuth(app)
+const db=getFirestore(app)
+
+let user
+let username
+let chatId
+let chatType
+let unsub
+let replyTo=null
+
+const friendsUl=document.getElementById("friendsUl")
+const groupsUl=document.getElementById("groupsUl")
+const chatPopup=document.getElementById("chatPopup")
+const chatMessages=document.getElementById("chatMessages")
+const chatInput=document.getElementById("chatInput")
+const chatTitle=document.getElementById("chatTitle")
+const replyPreview=document.getElementById("replyPreview")
+
+onAuthStateChanged(auth,async u=>{
+
+if(!u){location="/signup/index.html";return}
+
+user=u
+
+document.getElementById("userEmail").textContent=u.email
+document.getElementById("userUID").textContent=u.uid
+
+let ref=doc(db,"accounts",u.uid)
+let snap=await getDoc(ref)
+
+if(!snap.exists()){
+
+document.getElementById("usernameModal").style.display="flex"
+
+await setDoc(ref,{
+uid:u.uid,
+friends:[],
+groups:[]
+})
+
+}else{
+
+username=snap.data().username
+
+if(!username){
+document.getElementById("usernameModal").style.display="flex"
+}
+
+}
+
+loadFriends()
+loadGroups()
+
+})
+
+document.getElementById("saveUsername").onclick=async()=>{
+
+let name=document.getElementById("usernameInput").value.trim()
+if(!name)return
+
+username=name
+
+await updateDoc(doc(db,"accounts",user.uid),{
+username:name
+})
+
+document.getElementById("usernameModal").style.display="none"
+
+}
+
+document.getElementById("logout").onclick=()=>signOut(auth)
+
+document.getElementById("copyUID").onclick=()=>{
+navigator.clipboard.writeText(user.uid)
+}
+
+async function loadFriends(){
+
+let snap=await getDoc(doc(db,"accounts",user.uid))
+let list=snap.data()?.friends||[]
+
+friendsUl.innerHTML=""
+
+for(let f of list){
+
+let acc=await getDoc(doc(db,"accounts",f))
+let uname=acc.data()?.username||f
+
+let li=document.createElement("li")
+li.textContent=uname
+
+li.onclick=()=>openChat(f,"friend",uname)
+
+friendsUl.appendChild(li)
+
+}
+
+}
+
+async function loadGroups(){
+
+let snap=await getDoc(doc(db,"accounts",user.uid))
+let list=snap.data()?.groups||[]
+
+groupsUl.innerHTML=""
+
+list.forEach(g=>{
+
+let li=document.createElement("li")
+li.textContent=g.name+" ("+g.code+")"
+
+li.onclick=()=>openChat(g.code,"group",g.name)
+
+groupsUl.appendChild(li)
+
+})
+
+}
+
+function openChat(id,type,name){
+
+if(unsub)unsub()
+
+chatId=id
+chatType=type
+
+chatMessages.innerHTML=""
+replyPreview.textContent=""
+replyTo=null
+
+chatPopup.style.display="flex"
+chatTitle.textContent=name
+
+document.getElementById("leaveGroupBtn").style.display="none"
+document.getElementById("deleteGroupBtn").style.display="none"
+
+if(type==="group"){
+
+document.getElementById("leaveGroupBtn").style.display="inline-block"
+
+getDoc(doc(db,"groups",id)).then(snap=>{
+
+let g=snap.data()
+
+if(g.owner===user.uid){
+document.getElementById("deleteGroupBtn").style.display="inline-block"
+}
+
+})
+
+}
+
+let ref
+
+if(type==="friend"){
+
+let cid=[user.uid,id].sort().join("_")
+
+ref=collection(db,"directMessages",cid,"messages")
+
+}else{
+
+ref=collection(db,"groups",id,"messages")
+
+}
+
+let q=query(ref,orderBy("timestamp"))
+
+unsub=onSnapshot(q,snap=>{
+
+chatMessages.innerHTML=""
+
+snap.forEach(d=>renderMessage(d))
+
+chatMessages.scrollTop=chatMessages.scrollHeight
+
+})
+
+}
+
+function renderMessage(d){
+
+let m=d.data()
+let id=d.id
+
+let div=document.createElement("div")
+
+div.className="message-bubble "+(m.user===user.uid?"self":"friend")
+
+let uname=document.createElement("div")
+uname.className="username"
+uname.textContent=m.username
+
+div.appendChild(uname)
+
+if(m.reply){
+
+let r=document.createElement("div")
+r.className="reply-preview"
+r.textContent="↪ "+m.reply.text
+
+div.appendChild(r)
+
+}
+
+let text=document.createElement("div")
+text.textContent=m.text
+
+div.appendChild(text)
+
+let menu=document.createElement("div")
+menu.className="menu"
+
+let btn=document.createElement("button")
+btn.className="menu-btn"
+btn.textContent="⋮"
+
+btn.onclick=(e)=>{
+
+e.stopPropagation()
+
+document.querySelectorAll(".menu").forEach(m=>{
+if(m!==menu)m.classList.remove("open")
+})
+
+menu.classList.toggle("open")
+
+}
+
+let menuContent=document.createElement("div")
+menuContent.className="menu-content"
+
+let reply=document.createElement("button")
+reply.textContent="Reply"
+
+reply.onclick=()=>{
+replyTo={id:id,text:m.text}
+replyPreview.textContent="Replying to: "+m.text
+}
+
+menuContent.appendChild(reply)
+
+if(m.user===user.uid){
+
+let edit=document.createElement("button")
+edit.textContent="Edit"
+
+edit.onclick=async()=>{
+
+let t=prompt("Edit message",m.text)
+if(!t)return
+
+await updateDoc(d.ref,{text:t})
+
+}
+
+let del=document.createElement("button")
+del.textContent="Delete"
+
+del.onclick=async()=>{
+await deleteDoc(d.ref)
+}
+
+menuContent.appendChild(edit)
+menuContent.appendChild(del)
+
+}
+
+menu.appendChild(btn)
+menu.appendChild(menuContent)
+
+div.appendChild(menu)
+
+chatMessages.appendChild(div)
+
+}
+
+document.addEventListener("click",()=>{
+document.querySelectorAll(".menu").forEach(m=>m.classList.remove("open"))
+})
+
+document.getElementById("sendBtn").onclick=sendMessage
+
+async function sendMessage(){
+
+let text=chatInput.value.trim()
+if(!text)return
+
+chatInput.value=""
+
+let msg={
+user:user.uid,
+username:username,
+text:text,
+timestamp:serverTimestamp()
+}
+
+if(replyTo){
+
+msg.reply={id:replyTo.id,text:replyTo.text}
+
+replyTo=null
+replyPreview.textContent=""
+
+}
+
+if(chatType==="friend"){
+
+let cid=[user.uid,chatId].sort().join("_")
+
+await addDoc(
+collection(db,"directMessages",cid,"messages"),
+msg
+)
+
+}else{
+
+await addDoc(
+collection(db,"groups",chatId,"messages"),
+msg
+)
+
+}
+
+}
+
+document.getElementById("leaveGroupBtn").onclick=async()=>{
+
+if(chatType!=="group")return
+
+let gref=doc(db,"groups",chatId)
+let snap=await getDoc(gref)
+
+let g=snap.data()
+
+let members=g.members.filter(m=>m!==user.uid)
+
+await updateDoc(gref,{members:members})
+
+let acc=await getDoc(doc(db,"accounts",user.uid))
+
+let groups=acc.data().groups.filter(x=>x.code!==chatId)
+
+await updateDoc(doc(db,"accounts",user.uid),{groups:groups})
+
+chatPopup.style.display="none"
+
+loadGroups()
+
+}
+
+document.getElementById("deleteGroupBtn").onclick=async()=>{
+
+if(chatType!=="group")return
+
+if(!confirm("Delete this group?"))return
+
+await deleteDoc(doc(db,"groups",chatId))
+
+chatPopup.style.display="none"
+
+loadGroups()
+
+}
+
+document.getElementById("closeChat").onclick=()=>{
+
+chatPopup.style.display="none"
+
+if(unsub)unsub()
+
+}
+
+</script>
+</head>
+
+<body>
+
+<div class="username-modal" id="usernameModal">
+
+<div class="username-box">
+
+<h3>Choose Username</h3>
+
+<input id="usernameInput">
+
+<button id="saveUsername">Save</button>
+
+</div>
+
+</div>
+
+<header>
+
+<img src="/assets/logo.png" class="logo">
+
+<div class="user-box">
+
+<div id="userEmail"></div>
+
+<div class="uid-box">
+
+<span id="userUID"></span>
+
+<button class="copy-btn" id="copyUID">Copy</button>
+
+</div>
+
+</div>
+
+<button id="logout">Logout</button>
+
+</header>
+
+<main>
+
+<div class="card">
+
+<h2>Friends</h2>
+
+<div class="chat-controls">
+
+<input id="friendCode" placeholder="Friend UID">
+
+<button id="addFriendBtn">Add Friend</button>
+
+</div>
+
+<ul id="friendsUl"></ul>
+
+</div>
+
+<div class="card">
+
+<h2>Groups</h2>
+
+<div class="chat-controls">
+
+<input id="groupName" placeholder="New group name">
+
+<button id="createGroupBtn">Create</button>
+
+</div>
+
+<div class="chat-controls">
+
+<input id="joinCode" placeholder="Group code">
+
+<button id="joinGroupBtn">Join</button>
+
+</div>
+
+<ul id="groupsUl"></ul>
+
+</div>
+
+</main>
+
+<div class="modal-backdrop" id="chatPopup">
+
+<div class="modal">
+
+<h3 id="chatTitle"></h3>
+
+<div id="chatMessages" class="messages"></div>
+
+<div id="replyPreview" class="reply-preview"></div>
+
+<input id="chatInput" placeholder="Message">
+
+<button id="sendBtn">Send</button>
+
+<button id="leaveGroupBtn">Leave Group</button>
+
+<button id="deleteGroupBtn">Delete Group</button>
+
+<button id="closeChat">Close</button>
+
+</div>
+
+</div>
+
+</body>
+</html>

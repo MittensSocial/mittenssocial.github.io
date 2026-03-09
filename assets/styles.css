@@ -1,0 +1,275 @@
+body{
+font-family:'Poppins',sans-serif;
+background:linear-gradient(135deg,#f9fafb,#eef1f5);
+color:#111;
+margin:0;
+padding:0;
+min-height:100vh
+}
+
+header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:14px 24px;
+background:#ffffffcc;
+backdrop-filter:blur(10px);
+border-bottom:1px solid #eee
+}
+
+.logo{height:38px}
+
+.user-box{
+display:flex;
+flex-direction:column;
+align-items:flex-end;
+gap:4px;
+font-size:.85rem
+}
+
+.uid-box{
+display:flex;
+align-items:center;
+gap:6px;
+background:#f3f3f3;
+padding:6px 10px;
+border-radius:10px;
+font-size:.8rem
+}
+
+.copy-btn{
+padding:4px 9px;
+font-size:.75rem;
+border:none;
+border-radius:7px;
+background:#000;
+color:#fff;
+cursor:pointer
+}
+
+main{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:25px;
+padding:25px
+}
+
+.card{
+background:#fff;
+border-radius:16px;
+padding:18px;
+box-shadow:0 6px 20px rgba(0,0,0,0.07);
+border:1px solid #eee
+}
+
+.chat-controls{
+display:flex;
+gap:8px;
+margin-bottom:10px
+}
+
+.chat-controls input{
+padding:8px 12px;
+border-radius:10px;
+border:1px solid #ddd;
+flex:1
+}
+
+.chat-controls button{
+padding:8px 12px;
+border-radius:10px;
+border:none;
+background:#000;
+color:#fff;
+cursor:pointer
+}
+
+ul{
+list-style:none;
+padding:0;
+margin:0;
+max-height:220px;
+overflow-y:auto
+}
+
+li{
+padding:10px 12px;
+border-radius:12px;
+border:1px solid #eee;
+margin-bottom:8px;
+background:#fafafa;
+cursor:pointer
+}
+
+.messages{
+height:340px;
+overflow-y:auto;
+display:flex;
+flex-direction:column;
+gap:10px;
+padding:5px
+}
+
+.message-bubble{
+padding:10px 14px;
+border-radius:14px;
+max-width:70%;
+font-size:.9rem;
+line-height:1.3;
+position:relative
+}
+
+.self{
+background:#000;
+color:#fff;
+align-self:flex-end
+}
+
+.friend{
+background:#e9e9e9;
+align-self:flex-start
+}
+
+.username{
+font-size:.7rem;
+opacity:.6;
+margin-bottom:3px
+}
+
+.reply-preview{
+font-size:.75rem;
+opacity:.7;
+margin-bottom:4px
+}
+
+.menu{
+position:absolute;
+top:6px;
+right:6px
+}
+
+.menu-btn{
+background:none;
+border:none;
+cursor:pointer;
+font-size:18px
+}
+
+.menu-content{
+display:none;
+position:absolute;
+right:0;
+top:22px;
+background:white;
+border:1px solid #ddd;
+border-radius:10px;
+overflow:hidden;
+box-shadow:0 8px 20px rgba(0,0,0,0.15);
+z-index:50
+}
+
+.menu.open .menu-content{display:block}
+
+.menu-content button{
+display:block;
+width:100%;
+border:none;
+background:white;
+padding:8px 12px;
+text-align:left;
+cursor:pointer
+}
+
+.menu-content button:hover{
+background:#f3f3f3
+}
+
+.modal-backdrop{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.45);
+display:none;
+justify-content:center;
+align-items:center;
+z-index:1000
+}
+
+.modal{
+background:#fff;
+padding:24px;
+border-radius:18px;
+max-width:420px;
+width:90%;
+text-align:center
+}
+
+.modal input{
+width:90%;
+padding:10px;
+margin-top:10px;
+border-radius:10px;
+border:1px solid #ddd
+}
+
+.modal button{
+margin-top:14px;
+padding:8px 14px;
+border:none;
+border-radius:12px;
+background:#000;
+color:#fff;
+cursor:pointer
+}
+
+.username-modal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.5);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:2000
+}
+
+.username-box{
+background:white;
+padding:25px;
+border-radius:16px;
+width:300px;
+text-align:center
+}
+
+.username-box input{
+width:90%;
+padding:10px;
+border-radius:10px;
+border:1px solid #ddd
+}
+
+.username-box button{
+margin-top:10px;
+padding:8px 16px;
+border:none;
+border-radius:10px;
+background:black;
+color:white;
+cursor:pointer
+}
+
+@media(max-width:800px){
+main{
+grid-template-columns:1fr;
+padding:15px
+}
+
+header{
+flex-direction:column;
+gap:10px
+}
+}
