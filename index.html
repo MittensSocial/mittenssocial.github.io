@@ -21,6 +21,7 @@ gap:12px;
 box-shadow:0 10px 30px rgba(0,0,0,0.4);
 z-index:9999;
 }
+
 .mobile-banner button{
 background:#ff751f;
 border:none;
@@ -29,6 +30,7 @@ border-radius:8px;
 color:#fff;
 cursor:pointer;
 }
+
 .close-btn{
 background:transparent;
 border:none;
@@ -38,6 +40,7 @@ cursor:pointer;
 padding:6px 10px;
 border-radius:8px;
 }
+
 .close-btn:hover{
 background:rgba(255,255,255,0.1);
 color:#fff;
@@ -66,7 +69,11 @@ color:#fff;
 </div>
 
 <div class="user-code-box">
-<div class="code-label">Your Code</div>
+<div class="code-header">
+<span>Your Code</span>
+<span class="info">?</span>
+<div class="tooltip">share this code with friends to chat with them</div>
+</div>
 <div class="code-row">
 <span id="userCode"></span>
 <button id="copyCodeBtn">Copy</button>
@@ -120,7 +127,7 @@ color:#fff;
 <div id="chatTitle"></div>
 <div id="chatSub"></div>
 </div>
-<button id="closeChat">✕</button>
+<button id="closeChat" class="chat-close">✕</button>
 </div>
 
 <div class="messages" id="chatMessages"></div>
@@ -231,9 +238,24 @@ list.forEach(f=>{
 onSnapshot(doc(db,"accounts",f), accSnap=>{
 let data=accSnap.data();
 let li=document.createElement("li");
-li.textContent=(data?.username||f)+" "+(data?.online?"online":"offline");
+
+let status=data?.online?"online":"offline";
+
+li.innerHTML=`
+<div class="user-row">
+<span>${data?.username||f}</span>
+<span class="status ${status}">${status}</span>
+</div>
+`;
+
 li.onclick=()=>openChat(f,"friend",data?.username||f);
+
+let existing=[...friendsUl.children].find(x=>x.dataset.id===f);
+if(existing) existing.replaceWith(li);
+else{
+li.dataset.id=f;
 friendsUl.appendChild(li);
+}
 });
 });
 }
@@ -293,46 +315,6 @@ await addDoc(collection(db,"directMessages",[user.uid,chatId].sort().join("_"),"
 await addDoc(collection(db,"groups",chatId,"messages"),msg);
 }
 }
-
-document.getElementById("addFriendBtn").onclick=async()=>{
-let code=document.getElementById("friendCode").value.trim();
-if(!code)return;
-let accounts=await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-let snap=await accounts.getDocs(collection(db,"accounts"));
-let target=null;
-snap.forEach(d=>{if(d.data().code===code)target=d.id});
-if(!target)return;
-await updateDoc(doc(db,"accounts",user.uid),{friends:arrayUnion(target)});
-await updateDoc(doc(db,"accounts",target),{friends:arrayUnion(user.uid)});
-loadFriends();
-};
-
-document.getElementById("createGroupBtn").onclick=async()=>{
-let name=document.getElementById("groupName").value.trim();
-if(!name)return;
-let code=Math.random().toString(36).substring(2,8);
-await setDoc(doc(db,"groups",code),{name,code,members:[user.uid]});
-let acc=await getDoc(doc(db,"accounts",user.uid));
-let groups=acc.data().groups||[];
-groups.push({name,code});
-await updateDoc(doc(db,"accounts",user.uid),{groups});
-loadGroups();
-};
-
-document.getElementById("joinGroupBtn").onclick=async()=>{
-let code=document.getElementById("joinCode").value.trim();
-if(!code)return;
-let g=await getDoc(doc(db,"groups",code));
-if(!g.exists())return;
-await updateDoc(doc(db,"groups",code),{members:arrayUnion(user.uid)});
-let acc=await getDoc(doc(db,"accounts",user.uid));
-let groups=acc.data().groups||[];
-groups.push({name:g.data().name,code});
-await updateDoc(doc(db,"accounts",user.uid),{groups});
-loadGroups();
-};
-
-
 
 document.getElementById("closeChat").onclick=()=>{
 chatContainer.style.display="none";
