@@ -2,7 +2,7 @@
 
 **Mittens** is a real-time online texting application designed for fast, simple, and seamless communication directly in your browser.
 
-🌐 **Live App:** https://mittensweb.github.io
+ **Live App:** https://mittensweb.github.io
 
 ---
 
@@ -45,7 +45,6 @@ Mittens is built to provide a clean and responsive messaging experience using mo
 Planned improvements and future features:
 
 - User authentication system  
-- Private and group chats  
 - Message notifications  
 - Media/file sharing  
 - UI/UX enhancements  
